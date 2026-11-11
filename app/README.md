@@ -78,7 +78,8 @@ graph TD
   - Управляет жизненным циклом супервизора ядра, HTTP Gateway и фонового демона `agy-daemon`.
 - **`CoreLauncher`**:
   - Управляет установкой фазы 1 (распаковка и верификация ядра) и запуском нативного процесса.
-  - Содержит `killOrphanCoreProcesses()`: сканирует `/proc` и принудительно завершает (`SIGKILL`) любые зависшие orphan-процессы `language_server` от предыдущих сессий перед стартом, исключая ошибку `EADDRINUSE` (`listen: address already in use`) на фиксированных loopback-портах 45157/45158.
+  - Содержит `killOrphanCoreProcesses()`: сканирует `/proc` и принудительно завершает (`SIGKILL`) любые зависшие orphan-процессы `language_server` от предыдущих сессий перед стартом.
+  - `RuntimeConfig.httpsPort()`: динамически зондирует loopback-порты (45157 -> 45158+) при запуске, предотвращая краш `EADDRINUSE` (`bind: address already in use`) при параллельном запуске нескольких вариантов приложения (`com.agy`, `com.agy.plus`).
 - **`CoreProcessSupervisor`**:
   - Запускает ядро в выделенном рабочем потоке (`CoreServerThread`).
   - Непрерывно стримит объединенный поток stdout/stderr в `files/logs/core.log` и кольцевой буфер `LogRingBuffer`.
