@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""
+agy - Unified command-line interface for Antigravity on Android.
+Supports MCP management, daemon control, notifications, and utilities.
+"""
+
+import sys
+import os
+import json
+import subprocess
+
+CONFIG_DIR = os.path.expanduser("~/.gemini/config")
+MCP_CONFIG = os.path.join(CONFIG_DIR, "mcp_config.json")
+
+def load_mcp():
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    if not os.path.exists(MCP_CONFIG) or os.path.getsize(MCP_CONFIG) == 0:
+        return {"mcpServers": {}}
+    try:
+        with open(MCP_CONFIG, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"mcpServers": {}}
+
+def save_mcp(data):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(MCP_CONFIG, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+def handle_mcp(args):
+    if not args or args[0] in ("-h", "--help"):
+        print("Usage: agy mcp <command> [options]")
+        print("Commands:")
+        print("  add [--header 'Header: Value'] <name> <url>   Add an HTTP MCP server")
+        print("  list                                         List configured MCP servers")
+        print("  remove <name>                                Remove an MCP server")
+        return
+
+    cmd = args[0]
+    if cmd == "list":
+        data = load_mcp()
+        servers = data.get("mcpServers", {})
+        if not servers:
+            print("No MCP servers configured.")
+            return
+        print(f"Configured MCP servers ({len(servers)}):")
+        for name, cfg in servers.items():
+            url = cfg.get("url", cfg.get("command", "unknown"))
+            print(f"  • {name}: {url}")
+            if "headers" in cfg:
+                for k in cfg["headers"]:
+                    print(f"      header: {k}: [hidden]")
+
+    elif cmd == "add":
+        headers = {}
+        idx = 1
+        while idx < len(args):
+            if args[idx] in ("--header", "-H") and idx + 1 < len(args):
+                h = args[idx + 1]
+                if ":" in h:
+                    k, v = h.split(":", 1)
+                    headers[k.strip()] = v.strip()
+                idx += 2
+            elif args[idx].startswith("--header="):
+                h = args[idx].split("=", 1)[1]
+                if ":" in h:
+                    k, v = h.split(":", 1)
+                    headers[k.strip()] = v.strip()
+                idx += 1
+            else:
+                break
+
+        rem = args[idx:]
+        if len(rem) < 2:
+            print("Error: Name and URL/command required.")
+            print("Usage: agy mcp add [--header 'Header: Value'] <name> <url>")
+            sys.exit(1)
+
+        name = rem[0]
+        url = rem[1]
+
+        data = load_mcp()
+        if "mcpServers" not in data:
+            data["mcpServers"] = {}
+
+        entry = {"url": url}
+        if headers:
+            entry["headers"] = headers
+
+        data["mcpServers"][name] = entry
+        save_mcp(data)
+        print(f"✓ MCP server '{name}' successfully added ({url}).")
+
+    elif cmd == "remove":
+        if len(args) < 2:
+            print("Usage: agy mcp remove <name>")
+            sys.exit(1)
+        name = args[1]
+        data = load_mcp()
+        if "mcpServers" in data and name in data["mcpServers"]:
+            del data["mcpServers"][name]
+            save_mcp(data)
+            print(f"✓ MCP server '{name}' removed.")
+        else:
+            print(f"Error: MCP server '{name}' not found.")
+            sys.exit(1)
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print("Antigravity Unified CLI (agy)")
+        print("Commands:")
+        print("  mcp        Manage Model Context Protocol servers")
+        print("  daemon     Control background daemon (agy-daemon)")
+        print("  notify     Send Android notification (agy-notify)")
+        print("  models     Manage models adapter (agy-models)")
+        print("  fix-paths  Fix binary shebangs (agy-fix-paths)")
+        print("  upgrade    Upgrade Antigravity components")
+        return
+
+    sub = sys.argv[1]
+    sub_args = sys.argv[2:]
+
+    if sub == "mcp":
+        handle_mcp(sub_args)
+    elif sub == "daemon":
+        subprocess.run(["agy-daemon"] + sub_args)
+    elif sub == "notify":
+        subprocess.run(["agy-notify"] + sub_args)
+    elif sub == "models":
+        subprocess.run(["agy-models"] + sub_args)
+    elif sub == "fix-paths":
+        subprocess.run(["agy-fix-paths"] + sub_args)
+    elif sub == "upgrade":
+        subprocess.run(["agy-upgrade"] + sub_args)
+    else:
+        print(f"Unknown command: {sub}. Try 'agy --help'.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
