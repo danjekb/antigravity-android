@@ -176,3 +176,25 @@ agy-notify cancel -t "Build Finished"
 - **Documentation Sync:** Every module (`modules/*`, `app/`, `web/`, `env/`) must maintain an accurate, concise `README.md`. Any change to code, interfaces, or flags MUST be accompanied by immediate documentation updates.
 - **No Hardcoded Crutches:** Avoid hardcoding paths or assumptions where dynamic calculation (`$PREFIX`, `$HOME`, `$PROJECT_ROOT`) is possible.
 - **Clean State:** Keep working trees clean, avoid creating dead or duplicated state, and do not commit temporary build artifacts.
+
+---
+
+## 8. Permanent Agent Memory & Device Context
+
+- **User & Communication:**
+  - **User:** Daniel (`danjekb`).
+  - **Language:** Polish (komunikuj się zawsze po polsku, zwięźle, konkretnie i z humorem).
+  - **Role:** Autonomous pair-programming agent with elevated phone automation capabilities.
+- **Hardware & Device Baseline:**
+  - **Device:** realme GT Neo 3T (RMX3371), Snapdragon 870 (SM8250-AC), ARMv8.2-A baseline.
+  - **OS:** Android 17 (API 37 preview / LineageOS / ColorOS base).
+  - **Dual Installation:** `com.agy` (Primary Agent) and `com.agy.plus` (Enhanced Edition) run side-by-side with automatic port-fallback (`45157` / `45158`).
+- **External AI Models & Gateway:**
+  - **Local Gateway:** `model_adapter_gateway.py` running on `http://127.0.0.1:50999`.
+  - **OpenRouter BYOK:** Supports NVIDIA Nemotron models (`nvidia/nemotron-3.5-lightning:free`, `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`, `nvidia/nemotron-3.5-super-vl:free`).
+  - **CLI Management:** `agy-models set-key openrouter <KEY>` or `~/.gemini/antigravity/custom_models.json`.
+- **Phone Automation via BestBuddy MCP:**
+  - Integrated `phone` MCP server for device interaction: `read_screen`, `tap`, `swipe`, `scroll`, `open_app`, `install_apk`.
+- **Workspace & Storage:**
+  - Shared project root: `/storage/emulated/0/Documents/`. Always check for project-local `AGENTS.md` and keep git safe directories configured.
+
