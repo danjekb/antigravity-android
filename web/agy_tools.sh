@@ -349,10 +349,12 @@ op_index() { step "pkg update"; pkg_retry pkg update || fail "pkg update"; say "
 # ------------------------------------------------------------ install / remove / upgrade
 sync_resolver() {
     local src="$PREFIX/../web/agy_resolver.sh" dst="$PREFIX/libexec/pkg/lib/resolver.sh"
-    [ -s "$src" ] && [ -f "$dst" ] || fail "dependency resolver is missing"
-    if ! cmp -s "$src" "$dst"; then
-        cp "$src" "$dst.agy-new" && mv -f "$dst.agy-new" "$dst" || fail "cannot update dependency resolver"
+    if [ -s "$src" ] && [ -f "$dst" ]; then
+        if ! cmp -s "$src" "$dst"; then
+            cp "$src" "$dst.agy-new" && mv -f "$dst.agy-new" "$dst" || fail "cannot update dependency resolver"
+        fi
     fi
+    [ -f "$dst" ] || fail "dependency resolver is missing: $dst"
 }
 node_package_installed() {
     [ -f "$PREFIX/var/lib/pkg/installed/$1.meta" ] ||
