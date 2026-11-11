@@ -110,34 +110,40 @@ function installFetchRewrite() {
   };
   global.__AG_FETCH_REWRITE__ = true;
 
-  // 自动将内核 Cloud Code 路由挂接到本地轻量大模型网关 (DeepSeek / OpenAI / Claude)
+  // 自动将内核 Cloud Code 路由挂接到本地轻量大模型网关 (仅在网关真实运行时激活)
   function configureModelGateway() {
     try {
       var gatewayPort = 50999;
       var targetUrl = 'http://127.0.0.1:' + gatewayPort;
-      var rpcUrl = appendCsrfQuery(coreBase() + '/exa.language_server_pb.LanguageServerService/SetCloudCodeURL');
-      var reqHeaders = new Headers({
-        'Content-Type': 'application/json',
-        'Connect-Protocol-Version': '1'
-      });
-      ensureCsrf(reqHeaders);
-      fetchWithStartupRetry(rpcUrl, {
-        method: 'POST',
-        headers: reqHeaders,
-        body: JSON.stringify({ url: targetUrl })
-      }, 10).then(function (res) {
-        if (res && res.ok) {
-          log('model gateway connected to ' + targetUrl);
-        }
-      }).catch(function (err) {
-        warn('model gateway connect retry ended', err);
+      // Probing health check to avoid hijacking CloudCode to an inactive port
+      fetch(targetUrl + '/health', { method: 'GET' }).then(function (hRes) {
+        if (!hRes || !hRes.ok) return;
+        var rpcUrl = appendCsrfQuery(coreBase() + '/exa.language_server_pb.LanguageServerService/SetCloudCodeURL');
+        var reqHeaders = new Headers({
+          'Content-Type': 'application/json',
+          'Connect-Protocol-Version': '1'
+        });
+        ensureCsrf(reqHeaders);
+        fetchWithStartupRetry(rpcUrl, {
+          method: 'POST',
+          headers: reqHeaders,
+          body: JSON.stringify({ url: targetUrl })
+        }, 5).then(function (res) {
+          if (res && res.ok) {
+            log('model gateway connected to ' + targetUrl);
+          }
+        }).catch(function (err) {
+          warn('model gateway connect retry ended', err);
+        });
+      }).catch(function () {
+        // Model gateway not running, keep default Google Cloud Code backend
       });
     } catch (e) {
       warn('model gateway init', e);
     }
   }
 
-  setTimeout(configureModelGateway, 800);
+  setTimeout(configureModelGateway, 1500);
 }
 
 installFetchRewrite();

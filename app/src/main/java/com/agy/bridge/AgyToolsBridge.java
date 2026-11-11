@@ -82,24 +82,32 @@ public final class AgyToolsBridge {
         executor.submit(() -> {
             try {
                 File script = getScriptFile();
-                if (!script.exists()) {
+                if (!script.exists() || script.length() == 0) {
                     File[] candidates = new File[]{
-                            new File(context.getFilesDir(), "usr/bin/agy-tools"),
                             new File(context.getFilesDir(), "web/agy_tools.sh"),
+                            new File(context.getFilesDir(), "usr/bin/agy-tools"),
                             new File(context.getFilesDir(), "../app_assets/web/agy_tools.sh")
                     };
                     for (File c : candidates) {
-                        if (c.exists()) {
+                        if (c.exists() && c.length() > 0) {
                             script = c;
                             break;
                         }
                     }
                 }
+                if (script.exists()) {
+                    script.setExecutable(true, false);
+                    script.setReadable(true, false);
+                }
 
                 String home = context.getFilesDir().getAbsolutePath();
                 String prefix = home + "/usr";
 
-                ProcessBuilder pb = new ProcessBuilder("bash", script.getAbsolutePath(), op, arg != null ? arg : "");
+                File bashBin = new File(prefix, "bin/bash");
+                String shell = bashBin.canExecute() ? bashBin.getAbsolutePath() : "/system/bin/sh";
+
+                ProcessBuilder pb = new ProcessBuilder(shell, script.getAbsolutePath(), op, arg != null ? arg : "");
+                pb.redirectErrorStream(true);
                 pb.environment().put("HOME", home);
                 pb.environment().put("PREFIX", prefix);
                 pb.environment().put("PATH", prefix + "/bin:" + home + "/runtime/bin:/system/bin:" + System.getenv("PATH"));
