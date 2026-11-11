@@ -28,7 +28,7 @@ ar_member() {
         [ -n "$size" ] || return 1
         data=$((off + 60))
         if [ "$name" = "$want" ]; then
-            tail -c +$((data + 1)) "$file" | head -c "$size"
+            tail -c +$((data + 1)) "$file" 2>/dev/null | head -c "$size"
             return 0
         fi
         off=$((data + size + (size % 2)))
