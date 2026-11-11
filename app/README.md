@@ -22,6 +22,7 @@ graph TD
 
     subgraph Bridge_Layer ["Bridge & Security"]
         MA --> AB["AndroidBridge (JavascriptInterface 'Android')"]
+        MA --> ATB["AgyToolsBridge (JavascriptInterface 'AgyTools')"]
         AB --> UB["UiBridge (onUiReady, fatal errors, desktop mode)"]
         AB --> TB["ThemeBridge (Синхронизация тем)"]
         AB --> EB["EngineBridge (Статус и параметры ядра)"]

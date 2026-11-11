@@ -80,6 +80,7 @@ public final class NotificationHandler {
 
             builder.setContentTitle(title)
                     .setContentText(message)
+                    .setStyle(new Notification.BigTextStyle().bigText(message))
                     .setSmallIcon(icon)
                     .setOngoing(ongoing)
                     .setAutoCancel(!ongoing);

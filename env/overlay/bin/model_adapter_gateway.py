@@ -97,6 +97,38 @@ DEFAULT_CONFIG: Dict[str, Any] = {
                 }
             ]
         },
+        "openrouter": {
+            "name": "OpenRouter (BYOK / Free)",
+            "enabled": True,
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key": "",
+            "models": [
+                {
+                    "id": "nvidia/nemotron-3.5-lightning:free",
+                    "displayName": "Nemotron 3.5 Lightning (Free)",
+                    "description": "NVIDIA ultra-szybki model MoE 30B (3B active) pod agent coding",
+                    "reasoning": False
+                },
+                {
+                    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+                    "displayName": "Nemotron 3 Ultra (Free)",
+                    "description": "NVIDIA 550B MoE do ciężkich zadań deweloperskich i portowania",
+                    "reasoning": False
+                },
+                {
+                    "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                    "displayName": "Nemotron 3 Nano Omni Reasoning (Free)",
+                    "description": "NVIDIA 30B-A3B z wbudowanym logicznym myśleniem (Reasoning)",
+                    "reasoning": True
+                },
+                {
+                    "id": "nvidia/nemotron-3.5-super-vl:free",
+                    "displayName": "Nemotron 3.5 Super VL (Free)",
+                    "description": "NVIDIA multimodalny model wizyjno-językowy (1M kontekstu)",
+                    "reasoning": False
+                }
+            ]
+        },
         "custom": {
             "name": "本地/自定义兼容 (Ollama / OneAPI / NewAPI)",
             "enabled": False,
@@ -463,6 +495,9 @@ class ModelGatewayHandler(BaseHTTPRequestHandler):
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}" if api_key else ""
             }
+            if "openrouter" in base_url.lower():
+                headers["HTTP-Referer"] = "https://github.com/danjekb/antigravity-android"
+                headers["X-Title"] = "Antigravity Android"
 
             req_data = json.dumps(openai_payload, ensure_ascii=False).encode("utf-8")
             req = urllib.request.Request(target_url, data=req_data, headers=headers, method="POST")

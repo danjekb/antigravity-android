@@ -25,6 +25,7 @@ public final class WebViewFactory {
         // Hardware layer: hand compositing to the GPU (manifest enables HW accel).
         view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         view.addJavascriptInterface(bridge, "Android");
+        view.addJavascriptInterface(new com.agy.bridge.AgyToolsBridge(context), "AgyTools");
         // Android WebView needs an explicit focus grant for the soft keyboard to show.
         view.setOnTouchListener(new View.OnTouchListener() {
             @Override

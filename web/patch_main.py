@@ -82,7 +82,42 @@ def patch_main(file_path):
     content = content.replace(orig_hook, injected_hook, 1)
     content = content.replace(orig_theme, injected_theme, 1)
 
-    # 8. Background Resume Trajectory Stream Sync (vKa)
+    # 2. Expose window.__agySettings in QC.Provider for Security Shield & Tools
+    settings_target = 'customFlags:w},A.createElement(QC.Provider,{value:l}'
+    settings_repl = 'customFlags:w},A.createElement(QC.Provider,{value:(window.__agySettings={store:l,I:I,Ui:Ui,gEa:gEa,iEa:iEa,hEa:hEa,qq:qq,Mt:Mt},l)}'
+    if settings_target in content and "__agySettings" not in content:
+        content = content.replace(settings_target, settings_repl, 1)
+        print("[web-patch] Exposed window.__agySettings in QC.Provider")
+
+    # 3. Inject Tools screen into Settings
+    tools_switch_target = 'case "Regroup Google3 Chats":return A.createElement(BLb,null);case "Provide Feedback":return A.createElement(H_,null);'
+    tools_switch_repl = 'case "Regroup Google3 Chats":return A.createElement(BLb,null);case "Tools":return A.createElement("div",{key:"tools",className:"agy-tools-host",ref:x=>{x&&window.__agyToolsMount&&window.__agyToolsMount(x)}});case "Provide Feedback":return A.createElement(H_,null);'
+    if tools_switch_target in content and 'case "Tools":' not in content:
+        content = content.replace(tools_switch_target, tools_switch_repl, 1)
+        print("[web-patch] Injected Tools screen renderer into fNb")
+
+    # Mobile settings menu list
+    tools_mob_target = 'b=[...e.filter(q=>q!=="Account"),...f,...(c?[]:["Shortcuts"]),...(b.hideProvideFeedback?[]:["Provide Feedback"])];'
+    tools_mob_repl = 'b=[...e.filter(q=>q!=="Account"),...f,"Tools",...(c?[]:["Shortcuts"]),...(b.hideProvideFeedback?[]:["Provide Feedback"])];'
+    if tools_mob_target in content:
+        content = content.replace(tools_mob_target, tools_mob_repl, 1)
+        print("[web-patch] Added Tools to mobile Settings menu")
+
+    # Desktop settings sidebar
+    tools_desk_target = '"Settings")),A.createElement("div",{className:"flex flex-col gap-0.5"},k.map(F=>A.createElement(Q3,{key:F,text:F,label:Geb(F'
+    tools_desk_repl = '"Settings")),A.createElement("div",{className:"flex flex-col gap-0.5"},[...k,"Tools"].map(F=>A.createElement(Q3,{key:F,text:F,label:Geb(F'
+    if tools_desk_target in content:
+        content = content.replace(tools_desk_target, tools_desk_repl, 1)
+        print("[web-patch] Added Tools to desktop Settings sidebar")
+
+    # Desktop tab view display
+    tools_tab_target = 'A.createElement("div",{style:{display:b==="Notifications"?"block":"none"}},A.createElement(HLb,null))'
+    tools_tab_repl = 'A.createElement("div",{style:{display:b==="Tools"?"block":"none"}},fNb("Tools")),A.createElement("div",{style:{display:b==="Notifications"?"block":"none"}},A.createElement(HLb,null))'
+    if tools_tab_target in content and 'b==="Tools"' not in content:
+        content = content.replace(tools_tab_target, tools_tab_repl, 1)
+        print("[web-patch] Added Tools tab container to desktop Settings view")
+
+    # 4. Background Resume Trajectory Stream Sync (vKa)
     vka_target = 'this._factory=a}'
     vka_repl = (
         'this._factory=a;'
@@ -105,7 +140,7 @@ def patch_main(file_path):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-    print("[web-patch] Successfully patched Desktop Mode toggle into main.js (mobile by default, English)")
+    print("[web-patch] Successfully patched main.js")
     return True
 
 if __name__ == "__main__":

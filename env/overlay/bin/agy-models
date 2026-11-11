@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-agy-models - Antigravity 大模型管理命令行工具 (支持 DeepSeek, OpenAI, Claude, 本地模型)
+agy-models - Antigravity 大模型管理命令行工具 (支持 OpenRouter/Nemotron, DeepSeek, OpenAI, Claude, 本地模型)
 
 用法示例:
   agy-models list                     # 列出所有支持的服务商与模型
   agy-models status                   # 检查本地大模型适配网关健康状态
+  agy-models set-key openrouter <KEY> # 设置 OpenRouter API 密钥 (启用 Nemotron :free 系列)
   agy-models set-key <服务商> <密钥>   # 设置 API 密钥 (如: agy-models set-key deepseek sk-xxxx)
-  agy-models set-url <服务商> <地址>   # 设置自定义 API 基础地址 (如: agy-models set-url custom http://127.0.0.1:11434/v1)
+  agy-models set-url <服务商> <地址>   # 设置自定义 API 基础地址
   agy-models enable <服务商>          # 启用某个服务商
   agy-models disable <服务商>         # 禁用某个服务商
 """

@@ -71,6 +71,8 @@ web/
 │   ├── pdf.min.mjs               # Библиотека PDF.js core
 │   ├── pdf.worker.mjs            # Воркер парсинга PDF
 │   └── pdfjs_loader.mjs          # Мост между Closure compiler и ESM PDF.js
+├── agy_tools.js                  # UI каталога 1-Click Tools Store в Settings › Tools
+├── agy_tools.sh                  # Бэкенд-скрипт установки тулчейна (Node.js, JDK, SDK, pip)
 ├── generated/                    # Каталог артефактов сборки (генерируется build.sh)
 │   ├── main.js                   # Пропатченный рабочий бандл приложения
 │   ├── bridge.core.js            # Ядро моста, полифиллы и рерайтер fetch
@@ -81,7 +83,9 @@ web/
 │       ├── web_optimizations.js
 │       ├── touch_model_menu.js
 │       ├── theme_sync.js
-│       └── startup_ready.js
+│       ├── startup_ready.js
+│       ├── dashboard.js
+│       └── shield.js             # Security Shield (политики, автономность, песочница)
 ├── src/                          # Модульные исходники фрагментов бандлов
 │   ├── boot/                     # Фрагменты раннего старта
 │   ├── core/                     # Фрагменты ядра моста (namespace, csrf, fetch, ...)

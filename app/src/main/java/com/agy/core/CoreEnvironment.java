@@ -55,9 +55,12 @@ public final class CoreEnvironment {
         env.put("LC_ALL", "C.UTF-8");
 
         // Pure-Go resolver keeps DNS independent of Android's missing /etc.
+        // madvdontneed=1 forces immediate RAM reclamation, GOMEMLIMIT prevents OOM-killer.
         String godebug = env.get("GODEBUG");
         env.put("GODEBUG", godebug == null || godebug.isEmpty()
-                ? "netdns=go" : godebug + ",netdns=go");
+                ? "netdns=go,madvdontneed=1" : godebug + ",netdns=go,madvdontneed=1");
+        env.put("GOMEMLIMIT", "384MiB");
+        env.put("GOGC", "50");
         // Emits "ANTIGRAVITY_OPEN_URL: <url>" directly to stdout from language_server
         // so OpenUrlWatcher captures the auth URL and opens the external browser reliably.
         env.put("ANTIGRAVITY_VSCODE_HOST", "1");
