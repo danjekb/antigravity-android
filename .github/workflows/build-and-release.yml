@@ -30,7 +30,7 @@ permissions:
 jobs:
   build:
     name: Build Both Release Editions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Source Code
@@ -52,8 +52,10 @@ jobs:
 
       - name: Install Android Build Tools & System Utilities
         run: |
-          sudo apt-get update
-          sudo apt-get install -y aapt zipalign apksigner file zip unzip gzip
+          for i in 1 2 3 4 5; do
+            sudo apt-get update && break || (echo "Retrying apt-get update in 5s..." && sleep 5)
+          done
+          sudo apt-get install -y --fix-missing aapt zipalign apksigner file zip unzip gzip
 
       - name: Prepare Vendor Inputs & Signing Keystore
         env:
