@@ -111,7 +111,7 @@ public final class AgyToolsBridge {
                 pb.environment().put("HOME", home);
                 pb.environment().put("PREFIX", prefix);
                 pb.environment().put("PATH", prefix + "/bin:" + home + "/runtime/bin:/system/bin:" + System.getenv("PATH"));
-                pb.environment().remove("LD_LIBRARY_PATH");
+                pb.environment().put("LD_LIBRARY_PATH", prefix + "/lib");
                 pb.directory(context.getFilesDir());
 
                 Process proc = pb.start();
