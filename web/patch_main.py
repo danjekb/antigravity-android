@@ -20,67 +20,61 @@ def patch_main(file_path):
 
     if "Desktop Mode" in content or "ag_desktop_mode" in content:
         print("[web-patch] Desktop Mode toggle already present in main.js")
-        return True
+    else:
+        # 1. State hook injection pattern in Appearance component:
+        hook_pattern = re.compile(r'(var\s+[A-Za-z0-9_$]+=[A-Za-z0-9_$]+!==3,\s*[A-Za-z0-9_$]+=[A-Za-z0-9_$]+!==2,\s*[A-Za-z0-9_$]+=[A-Za-z0-9_$]+=>\s*[A-Za-z0-9_$]+=>\{.*?\};)')
+        hook_match = hook_pattern.search(content)
 
-    # 1. State hook injection pattern in Appearance component:
-    # Matches: var C=g!==3,D=g!==2,E=F=>G=>{F===t&&v(G)}; or legacy var B=f!==3,C=f!==2,D=E=>G=>{E===r&&u(G)};
-    hook_pattern = re.compile(r'(var\s+[A-Za-z0-9_$]+=[A-Za-z0-9_$]+!==3,\s*[A-Za-z0-9_$]+=[A-Za-z0-9_$]+!==2,\s*[A-Za-z0-9_$]+=[A-Za-z0-9_$]+=>\s*[A-Za-z0-9_$]+=>\{.*?\};)')
-    hook_match = hook_pattern.search(content)
+        # 2. JSX Theme element injection: find Theme element in Appearance
+        theme_idx = content.find('{label:"Theme"')
+        theme_match = None
+        react_id = "A"
+        if theme_idx != -1:
+            window_start = max(0, theme_idx - 100)
+            window_end = min(len(content), theme_idx + 500)
+            window_text = content[window_start:window_end]
+            theme_pattern = re.compile(
+                r'([A-Za-z0-9_$]+)\.createElement\(([A-Za-z0-9_$]+),\{label:"Theme",.*?onSelect:[A-Za-z0-9_$]+\}\)'
+            )
+            theme_match = theme_pattern.search(window_text)
+            if theme_match:
+                react_id = theme_match.group(1)
 
-    # 2. JSX Theme element injection: find Theme element in Appearance
-    theme_idx = content.find('{label:"Theme"')
-    theme_match = None
-    react_id = "A"
-    if theme_idx != -1:
-        # Search backwards within a reasonable window (e.g. 100 chars) for createElement
-        window_start = max(0, theme_idx - 100)
-        window_end = min(len(content), theme_idx + 500)
-        window_text = content[window_start:window_end]
-        theme_pattern = re.compile(
-            r'([A-Za-z0-9_$]+)\.createElement\(([A-Za-z0-9_$]+),\{label:"Theme",.*?onSelect:[A-Za-z0-9_$]+\}\)'
-        )
-        theme_match = theme_pattern.search(window_text)
-        if theme_match:
-            react_id = theme_match.group(1)
+        if not hook_match or not theme_match:
+            print(f"[web-patch] patterns not matched: hook={bool(hook_match)}, theme={bool(theme_match)}", file=sys.stderr)
+        else:
+            orig_hook = hook_match.group(1)
+            injected_hook = (
+                f"var [isDesktop,setIsDesktop]=(0,{react_id}.useState)(()=>{{"
+                "try{if(window.Android&&typeof window.Android.isDesktopMode==='function')return window.Android.isDesktopMode();"
+                "var s=localStorage.getItem('ag_desktop_mode');return s===null?!1:s==='true'}catch(_){return !1}});"
+                f"var onDesktopToggle=(0,{react_id}.useCallback)(v=>{{"
+                "setIsDesktop(v);try{localStorage.setItem('ag_desktop_mode',String(v));"
+                "if(window.Android&&typeof window.Android.setDesktopMode==='function')window.Android.setDesktopMode(v)}catch(_){}},[]);"
+                + orig_hook
+            )
 
-    if not hook_match or not theme_match:
-        print(f"[web-patch] patterns not matched: hook={bool(hook_match)}, theme={bool(theme_match)}", file=sys.stderr)
-        return False
+            item_comp = "v3"
+            switch_comp = "dX"
+            re_idx = content.find('rightElement:')
+            if re_idx != -1:
+                re_window = content[max(0, re_idx - 150):min(len(content), re_idx + 150)]
+                item_m = re.search(r'([A-Za-z0-9_$]+)\.createElement\(([A-Za-z0-9_$]+),\{label:[^,]+,description:[^,]+,rightElement:', re_window)
+                if item_m:
+                    item_comp = item_m.group(2)
+                sw_m = re.search(r'rightElement:[A-Za-z0-9_$]+\.createElement\(([A-Za-z0-9_$]+),\{checked:', re_window)
+                if sw_m:
+                    switch_comp = sw_m.group(1)
 
-    orig_hook = hook_match.group(1)
-    injected_hook = (
-        f"var [isDesktop,setIsDesktop]=(0,{react_id}.useState)(()=>{{"
-        "try{if(window.Android&&typeof window.Android.isDesktopMode==='function')return window.Android.isDesktopMode();"
-        "var s=localStorage.getItem('ag_desktop_mode');return s===null?!1:s==='true'}catch(_){return !1}});"
-        f"var onDesktopToggle=(0,{react_id}.useCallback)(v=>{{"
-        "setIsDesktop(v);try{localStorage.setItem('ag_desktop_mode',String(v));"
-        "if(window.Android&&typeof window.Android.setDesktopMode==='function')window.Android.setDesktopMode(v)}catch(_){}},[]);"
-        + orig_hook
-    )
+            orig_theme = theme_match.group(0)
+            injected_theme = (
+                orig_theme
+                + f',{react_id}.createElement({item_comp},{{label:"Desktop Mode",description:"Use desktop viewport and user agent for the workspace",'
+                + f'rightElement:{react_id}.createElement({switch_comp},{{checked:isDesktop,onCheckedChange:onDesktopToggle}})}})'
+            )
 
-    # Detect switch and setting item components
-    # Look for setting item component used with rightElement or contrast setting
-    item_comp = "v3"
-    switch_comp = "dX"
-    re_idx = content.find('rightElement:')
-    if re_idx != -1:
-        re_window = content[max(0, re_idx - 150):min(len(content), re_idx + 150)]
-        item_m = re.search(r'([A-Za-z0-9_$]+)\.createElement\(([A-Za-z0-9_$]+),\{label:[^,]+,description:[^,]+,rightElement:', re_window)
-        if item_m:
-            item_comp = item_m.group(2)
-        sw_m = re.search(r'rightElement:[A-Za-z0-9_$]+\.createElement\(([A-Za-z0-9_$]+),\{checked:', re_window)
-        if sw_m:
-            switch_comp = sw_m.group(1)
-
-    orig_theme = theme_match.group(0)
-    injected_theme = (
-        orig_theme
-        + f',{react_id}.createElement({item_comp},{{label:"Desktop Mode",description:"Use desktop viewport and user agent for the workspace",'
-        + f'rightElement:{react_id}.createElement({switch_comp},{{checked:isDesktop,onCheckedChange:onDesktopToggle}})}})'
-    )
-
-    content = content.replace(orig_hook, injected_hook, 1)
-    content = content.replace(orig_theme, injected_theme, 1)
+            content = content.replace(orig_hook, injected_hook, 1)
+            content = content.replace(orig_theme, injected_theme, 1)
 
     # 2. Expose window.__agySettings in QC.Provider for Security Shield & Tools
     settings_target = 'customFlags:w},A.createElement(QC.Provider,{value:l}'
@@ -136,6 +130,31 @@ def patch_main(file_path):
     if vka_disp_target in content:
         content = content.replace(vka_disp_target, vka_disp_repl, 1)
         print("[web-patch] Cleaned up global registry on vKa dispose")
+
+    # 5. Unlock Custom Models UI (bypass isGoogleInternal & internal gates)
+    cm_target1 = 'r=k.osName==="linux"&&k.isGoogleInternal;\nk=k.isGoogleInternal;'
+    cm_repl1 = 'r=!0;\nk=!0;'
+    if cm_target1 in content:
+        content = content.replace(cm_target1, cm_repl1, 1)
+        print("[web-patch] Unlocked custom models in Ycc (bypassed isGoogleInternal)")
+
+    cm_target2 = 'var m=Pj(l),n=!!l,q=(0,A.useMemo)'
+    cm_repl2 = 'var m=Pj(l),n=!0,q=(0,A.useMemo)'
+    if cm_target2 in content:
+        content = content.replace(cm_target2, cm_repl2, 1)
+        print("[web-patch] Unlocked supportsCustomModels in cCb")
+
+    cm_target3 = '{isGoogleInternal:O}=jS().product;'
+    cm_repl3 = '{isGoogleInternal:O}=jS().product;O=!0;'
+    if cm_target3 in content:
+        content = content.replace(cm_target3, cm_repl3, 1)
+        print("[web-patch] Unlocked showCustomModelHeader in cYb")
+
+    cm_target4 = 'fa.customModelsFeature=N.features.customModelsFeature;'
+    cm_repl4 = 'fa.customModelsFeature=N.features.customModelsFeature||{customModelsProvider:x.customModelsProvider};'
+    if cm_target4 in content:
+        content = content.replace(cm_target4, cm_repl4, 1)
+        print("[web-patch] Injected fallback customModelsProvider into featureManager")
 
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
